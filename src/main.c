@@ -30,6 +30,13 @@ int main(void)
         }
         remove_char('\n', buf);
 
+        // Check if user even entered anything
+        if (strcmp("", buf) == 0) {
+            free(args);
+            free(buf);
+            continue;
+        }
+
         next = strtok(buf, " ");
         /** printf("buf %d: %s\n", args_size - 2, next); */
         while (next != NULL) {
@@ -39,7 +46,9 @@ int main(void)
             }
 
             /** printf("arg %d: %s - len: %ld\n", args_size - 2, args[args_size - 2], strlen(args[args_size - 2])); */
-
+            // Because strtok inserts a \0 at every delimiter freeing buf later won't work properly
+            // So we free every incrment of buf when we free next here
+            /** free(next); */
             next = strtok(NULL, " ");
 
             args = realloc(args, sizeof(char*) * ++args_size);
@@ -47,6 +56,7 @@ int main(void)
                 exit_with_error("re-allocating args");
             }
         }
+        /** free(next); */
 
         // Null terminated for exec
         args[args_size - 1] = NULL;

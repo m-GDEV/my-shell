@@ -1,4 +1,5 @@
 #include "helper.h"
+#include <string.h>
 
 void remove_char(char c, char* buf)
 {
