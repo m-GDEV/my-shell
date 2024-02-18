@@ -63,6 +63,7 @@ int main(void)
 
         // User wants to exit
         if (user_wants_exit(args[0])) {
+            free_memory(args, args_size, buf, NULL);
             exit(0);
         }
 
