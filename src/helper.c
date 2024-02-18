@@ -28,6 +28,8 @@ bool user_wants_exit(char* arg)
         return true;
     } else if (strcmp("bye", arg) == 0) {
         return true;
+    } else if (strcmp("e", arg) == 0) {
+        return true;
     } else {
         return false;
     }

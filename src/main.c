@@ -1,5 +1,5 @@
 #include "helper.h"
-#include <stdlib.h>
+#include <stdio.h>
 
 int main(void)
 {
@@ -28,6 +28,7 @@ int main(void)
         if (getline(&buf, &buf_size, stdin) == -1) {
             exit_with_error("reading input");
         }
+
         remove_char('\n', buf);
 
         // Check if user even entered anything
@@ -65,6 +66,17 @@ int main(void)
         if (user_wants_exit(args[0])) {
             free_memory(args, args_size, buf, NULL);
             exit(0);
+        }
+
+        // Built in 'cd' command
+        if (strcmp("cd", args[0]) == 0) {
+
+            if (chdir(args[1]) == -1) {
+                printf("shell: cd: %s: %s\n", args[1], strerror(errno));
+            }
+
+            free_memory(args, args_size, buf, NULL);
+            continue;
         }
 
         // path = '/bin/'+args[0]+null terminator
