@@ -12,6 +12,12 @@ int main(void)
         }
         printf("$ ");
 
+        // Declaring our variables
+        int args_size = 1;
+        size_t buf_size = 0;
+        char* buf = NULL;
+        char* next = NULL;
+
         // last args should be NULL
         // here we assume there are no other args, if there are we will realloc
         char** args = malloc(sizeof(char*) * 1);
@@ -20,11 +26,7 @@ int main(void)
             exit_with_error("allocating memory for args");
         }
 
-        int args_size = 1;
-        size_t buf_size = 0;
-        char* buf = NULL;
-        char* next = NULL;
-
+        // Get input from user
         if (getline(&buf, &buf_size, stdin) == -1) {
             exit_with_error("reading input");
         }
@@ -38,6 +40,7 @@ int main(void)
             continue;
         }
 
+        // Convert input from one string to n strings delimited by " "
         next = strtok(buf, " ");
         /** printf("buf %d: %s\n", args_size - 2, next); */
         while (next != NULL) {
@@ -49,7 +52,6 @@ int main(void)
             /** printf("arg %d: %s - len: %ld\n", args_size - 2, args[args_size - 2], strlen(args[args_size - 2])); */
             // Because strtok inserts a \0 at every delimiter freeing buf later won't work properly
             // So we free every incrment of buf when we free next here
-            /** free(next); */
             next = strtok(NULL, " ");
 
             args = realloc(args, sizeof(char*) * ++args_size);
@@ -57,7 +59,6 @@ int main(void)
                 exit_with_error("re-allocating args");
             }
         }
-        /** free(next); */
 
         // Null terminated for exec
         args[args_size - 1] = NULL;
@@ -72,7 +73,7 @@ int main(void)
         if (strcmp("cd", args[0]) == 0) {
 
             if (chdir(args[1]) == -1) {
-                printf("shell: cd: %s: %s\n", args[1], strerror(errno));
+                printf("my-shell: cd: %s: %s\n", args[1], strerror(errno));
             }
 
             free_memory(args, args_size, buf, NULL);
@@ -89,6 +90,7 @@ int main(void)
         // Crafting path for exec
         sprintf(path, "%s", args[0]);
 
+        // Fork and then exec command
         pid_t result = fork();
 
         if (result == -1) {
@@ -96,7 +98,7 @@ int main(void)
         } else if (result == 0) {
 
             if (execvp(path, args) == -1) {
-                printf("shell: %s: command not found\n", path);
+                printf("my-shell: %s: command not found\n", path);
 
                 // Clean up memory
                 free_memory(args, args_size, buf, path);
