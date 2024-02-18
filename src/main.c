@@ -1,9 +1,10 @@
 #include "helper.h"
-#include <stdio.h>
 
 int main(void)
 {
     int return_code = 0;
+
+    /** alias_struct* alias_collection = process_config(); */
 
     while (1) {
         // prompt
@@ -13,18 +14,8 @@ int main(void)
         printf("$ ");
 
         // Declaring our variables
-        int args_size = 1;
         size_t buf_size = 0;
         char* buf = NULL;
-        char* next = NULL;
-
-        // last args should be NULL
-        // here we assume there are no other args, if there are we will realloc
-        char** args = malloc(sizeof(char*) * 1);
-
-        if (args == NULL) {
-            exit_with_error("allocating memory for args");
-        }
 
         // Get input from user
         if (getline(&buf, &buf_size, stdin) == -1) {
@@ -35,60 +26,58 @@ int main(void)
 
         // Check if user even entered anything
         if (strcmp("", buf) == 0) {
-            free(args);
             free(buf);
             continue;
         }
 
-        // Convert input from one string to n strings delimited by " "
-        next = strtok(buf, " ");
-        /** printf("buf %d: %s\n", args_size - 2, next); */
-        while (next != NULL) {
-            args[args_size - 1] = strdup(next);
-            if (args[args_size - 1] == NULL) {
-                exit_with_error("copying to args[i]");
-            }
+        args_struct* args = str_to_args(buf, " ");
 
-            /** printf("arg %d: %s - len: %ld\n", args_size - 2, args[args_size - 2], strlen(args[args_size - 2])); */
-            // Because strtok inserts a \0 at every delimiter freeing buf later won't work properly
-            // So we free every incrment of buf when we free next here
-            next = strtok(NULL, " ");
-
-            args = realloc(args, sizeof(char*) * ++args_size);
-            if (args == NULL) {
-                exit_with_error("re-allocating args");
-            }
-        }
-
-        // Null terminated for exec
-        args[args_size - 1] = NULL;
+        // Check if args->strings[0] is an alias, if so replace it with alias
+        // I'm pretty sure bash and other shells only uses aliases for the command and not args->strings
+        /** if (strcmp(alias_collection[0].alias, args->strings[0])) { */
+        /**     free(args->strings[0]); */
+        /**     args->strings[0] = alias_collection[0].actual_command; */
+        /** } */
 
         // User wants to exit
-        if (user_wants_exit(args[0])) {
-            free_memory(args, args_size, buf, NULL);
+        if (user_wants_exit(args->strings[0])) {
+            free_memory(args, buf, NULL);
             exit(0);
         }
 
         // Built in 'cd' command
-        if (strcmp("cd", args[0]) == 0) {
+        if (strcmp("cd", args->strings[0]) == 0) {
 
-            if (chdir(args[1]) == -1) {
-                printf("my-shell: cd: %s: %s\n", args[1], strerror(errno));
+            char* cd_path = args->strings[1];
+            char* home_path = NULL;
+
+            // User wants to cd home
+            if (args->strings[1] == NULL || strcmp("~", args->strings[1]) == 0) {
+                char* user = getenv("USER");
+                // '/home/'+USER+\0
+                home_path = malloc(sizeof(char) * (6 + strlen(user) + 1));
+                sprintf(home_path, "/home/%s", user);
+                printf("%s\n", home_path);
+                cd_path = home_path;
             }
 
-            free_memory(args, args_size, buf, NULL);
+            if (chdir(cd_path) == -1) {
+                printf("my-shell: cd: %s: %s\n", args->strings[1], strerror(errno));
+            }
+
+            free_memory(args, buf, home_path);
             continue;
         }
 
-        // path = '/bin/'+args[0]+null terminator
-        char* path = malloc(sizeof(char) * (strlen(args[0]) + 1));
+        // path = '/bin/'+args->strings[0]+null terminator
+        char* path = malloc(sizeof(char) * (strlen(args->strings[0]) + 1));
         if (path == NULL) {
-            free_memory(args, args_size, buf, path);
+            free_memory(args, buf, path);
             exit_with_error("allocating path");
         }
 
         // Crafting path for exec
-        sprintf(path, "%s", args[0]);
+        sprintf(path, "%s", args->strings[0]);
 
         // Fork and then exec command
         pid_t result = fork();
@@ -97,11 +86,11 @@ int main(void)
             exit_with_error("could not fork");
         } else if (result == 0) {
 
-            if (execvp(path, args) == -1) {
+            if (execvp(path, args->strings) == -1) {
                 printf("my-shell: %s: command not found\n", path);
 
                 // Clean up memory
-                free_memory(args, args_size, buf, path);
+                free_memory(args, buf, path);
 
                 exit(1);
                 /** exit_with_error("exec failed"); */
@@ -115,7 +104,7 @@ int main(void)
             }
 
             // Clean up memory
-            free_memory(args, args_size, buf, path);
+            free_memory(args, buf, path);
         }
     }
 }
