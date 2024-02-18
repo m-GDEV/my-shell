@@ -28,5 +28,6 @@ void exit_with_error(char* str);
 void print_error(char* str);
 bool user_wants_exit(char* arg);
 void free_memory(args_struct* args, char* buf, char* path);
-alias_struct* process_config(void);
+alias_struct* process_config(int* alias_count);
 args_struct* str_to_args(char* str, char* delim);
+void print_args(args_struct* args);

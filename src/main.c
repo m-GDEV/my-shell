@@ -3,8 +3,9 @@
 int main(void)
 {
     int return_code = 0;
+    int alias_count = 0;
 
-    /** alias_struct* alias_collection = process_config(); */
+    alias_struct* alias_collection = process_config(&alias_count);
 
     while (1) {
         // prompt
@@ -13,11 +14,10 @@ int main(void)
         }
         printf("$ ");
 
-        // Declaring our variables
+        // Get input from user
         size_t buf_size = 0;
         char* buf = NULL;
 
-        // Get input from user
         if (getline(&buf, &buf_size, stdin) == -1) {
             exit_with_error("reading input");
         }
@@ -34,10 +34,14 @@ int main(void)
 
         // Check if args->strings[0] is an alias, if so replace it with alias
         // I'm pretty sure bash and other shells only uses aliases for the command and not args->strings
-        /** if (strcmp(alias_collection[0].alias, args->strings[0])) { */
-        /**     free(args->strings[0]); */
-        /**     args->strings[0] = alias_collection[0].actual_command; */
-        /** } */
+        for (int i = 0; i < alias_count; i++) {
+            if (strcmp(alias_collection[i].alias, args->strings[0]) == 0) {
+                free_memory(args, NULL, NULL);
+                args = str_to_args(alias_collection[i].actual_command, " ");
+                /** printf("making args = %s\n", alias_collection[i].actual_command); */
+                break; // Makes it such that duplicate aliases are not found
+            }
+        }
 
         // User wants to exit
         if (user_wants_exit(args->strings[0])) {
@@ -85,7 +89,7 @@ int main(void)
         if (result == -1) {
             exit_with_error("could not fork");
         } else if (result == 0) {
-
+            /** print_args(args); */
             if (execvp(path, args->strings) == -1) {
                 printf("my-shell: %s: command not found\n", path);
 

@@ -53,7 +53,7 @@ void free_memory(args_struct* args, char* buf, char* path)
 }
 
 // Function does not take input as there are default location(s) for config file
-alias_struct* process_config(void)
+alias_struct* process_config(int* alias_count)
 {
     // Try to load config file
     char* user = getenv("USER");
@@ -74,7 +74,7 @@ alias_struct* process_config(void)
 
     while (!feof(config_file)) {
         char* buf = NULL;
-        size_t buf_size;
+        size_t buf_size = 0;
 
         getline(&buf, &buf_size, config_file);
 
@@ -129,10 +129,11 @@ alias_struct* process_config(void)
         }
     }
 
-    for (int i = 0; i < aliases_size - 1; i++) {
-        printf("[%d] alias: %s | actual: %s\n", i, alias_collection[i].alias, alias_collection[i].actual_command);
-    }
+    /** for (int i = 0; i < aliases_size - 1; i++) { */
+    /**     printf("[%d] alias: %s | actual: %s\n", i, alias_collection[i].alias, alias_collection[i].actual_command); */
+    /** } */
 
+    *alias_count = aliases_size - 1;
     return alias_collection;
 }
 
@@ -151,9 +152,11 @@ args_struct* str_to_args(char* str, char* delim)
         exit_with_error("allocating memory for args->strings");
     }
 
-    // Convert input from one string to n strings delimited by " "
+    // Convert input from one string to n strings delimited by delim
+    char* dupe = strdup(str);
+
     char* next = NULL;
-    next = strtok(str, delim);
+    next = strtok(dupe, delim);
     /** printf("buf %d: %s\n", args_size - 2, next); */
     while (next != NULL) {
         // Because strtok inserts a \0 at every delimiter we don't need to make the last char \0
@@ -171,8 +174,18 @@ args_struct* str_to_args(char* str, char* delim)
         }
     }
 
+    // Clean up
+    free(dupe);
+
     // Null terminated for exec
     args->strings[args->args_size - 1] = NULL;
 
     return args;
+}
+
+void print_args(args_struct* args)
+{
+    for (int i = 0; i < args->args_size; i++) {
+        printf("args[%d] = %s\n", i, args->strings[i]);
+    }
 }
