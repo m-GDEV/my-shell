@@ -11,6 +11,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// Global variables
+extern pid_t current_child_pid;
+
 // Helper structs
 struct {
     char* alias;
@@ -31,3 +34,4 @@ void free_memory(args_struct* args, char* buf, char* path);
 alias_struct* process_config(int* alias_count);
 args_struct* str_to_args(char* str, char* delim);
 void print_args(args_struct* args);
+void catch_sigint(int signum);

@@ -1,11 +1,19 @@
 #include "helper.h"
+#include <signal.h>
+
+int current_child_pid;
 
 int main(void)
 {
     int return_code = 0;
     int alias_count = 0;
+    current_child_pid = -1;
 
     alias_struct* alias_collection = process_config(&alias_count);
+
+    if (signal(SIGINT, catch_sigint) == SIG_ERR) {
+        exit_with_error("Could not register signal handler");
+    }
 
     while (1) {
         // prompt
@@ -43,6 +51,16 @@ int main(void)
             }
         }
 
+        // User wants to view aliases
+        if (strcmp("aliases", args->strings[0]) == 0) {
+            for (int i = 0; i < alias_count; i++) {
+                printf("alias '%s' = '%s'\n", alias_collection[i].alias, alias_collection[i].actual_command);
+            }
+            free_memory(args, buf, NULL);
+            return_code = 0;
+            continue;
+        }
+
         // User wants to exit
         if (user_wants_exit(args->strings[0])) {
             free_memory(args, buf, NULL);
@@ -67,8 +85,10 @@ int main(void)
 
             if (chdir(cd_path) == -1) {
                 printf("my-shell: cd: %s: %s\n", args->strings[1], strerror(errno));
+                return_code = errno;
             }
 
+            return_code = 0;
             free_memory(args, buf, home_path);
             continue;
         }
@@ -100,6 +120,7 @@ int main(void)
                 /** exit_with_error("exec failed"); */
             }
         } else {
+            current_child_pid = result;
             int child_status = 0;
             wait(&child_status);
 

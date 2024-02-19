@@ -189,3 +189,12 @@ void print_args(args_struct* args)
         printf("args[%d] = %s\n", i, args->strings[i]);
     }
 }
+
+void catch_sigint(int signum)
+{
+    if (signal(SIGINT, catch_sigint) == SIG_ERR) {
+        exit_with_error("Could not register signal handler");
+    }
+
+    kill(current_child_pid, SIGINT);
+}
