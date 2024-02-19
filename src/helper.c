@@ -196,5 +196,11 @@ void catch_sigint(int signum)
         exit_with_error("Could not register signal handler");
     }
 
-    kill(current_child_pid, SIGINT);
+    // As we set current_child_pid as -1 initially, the literal kernel will segfault
+    // if we give kill a pid of -1
+    if (current_child_pid != -1) {
+        kill(current_child_pid, SIGINT);
+    }
+
+    printf("here\n");
 }
